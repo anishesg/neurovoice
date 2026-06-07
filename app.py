@@ -35,6 +35,8 @@ sys.path.insert(0, os.path.expanduser("~/axiom"))
 from neuralrl import BrainReward, CTS, NeuralFingerprint, AdaptationTracker
 from neuralrl import BrainPublisher, BrainInterpreter, WeaveTracker
 from neuralrl.brain_reward import BrainSnapshot
+from neuralrl.strand import Strand
+from neuralrl.braid import Braid
 
 STYLE_PARAMS = ["formality", "enthusiasm", "verbosity", "empathy",
                 "humor", "assertiveness", "expressiveness", "warmth"]
@@ -380,6 +382,11 @@ class NeuroVoiceApp:
         self.policy = CTS(action_dim=8, context_dim=12, param_names=STYLE_PARAMS)
         self.fingerprint = NeuralFingerprint()
         self.adaptation = AdaptationTracker()
+        self.braid = Braid(output_dim=8)
+        self.braid.add(Strand('content', output_dim=8))
+        self.braid.add(Strand('emotion', output_dim=8))
+        self.braid.add(Strand('style', output_dim=8))
+        self.braid.add(Strand('context', output_dim=8))
         self.llm = BrainLLM()
         self.stt = MicSTT()
         self.tts = ElevenTTS()
@@ -580,6 +587,14 @@ class NeuroVoiceApp:
         reward = self.reward.compute(post_snap)
         self.policy.update(reward)
 
+        # Braid: fuse strands + decompose reward into dimensions
+        braid_ctx = post_snap.to_context()
+        braid_output = self.braid.fuse(braid_ctx)
+        brain_dims = {"engagement": self.brain.engagement, "valence": self.brain.valence,
+                      "focus": self.brain.focus, "cognitive_load": self.brain.cognitive_load}
+        strand_rewards = self.braid.decompose_reward(brain_dims, reward)
+        self.braid.step(strand_rewards, braid_ctx)
+
         adapt_score = self.adaptation.update(
             reward, self.policy.exploration_rate, self.policy.std)
 
@@ -615,6 +630,10 @@ class NeuroVoiceApp:
             "reward_history": self.reward.get_history(),
             "rl_stats": self.policy.get_stats(),
             "weave_episodes": self.weave.episode_count,
+            "strands": self.braid.get_strand_stats(),
+            "strand_rewards": strand_rewards,
+            "fusion": self.braid.get_fusion_state(),
+            "strand_confidences": self.braid.get_confidence_map(),
         })
         await self._broadcast("phase", {"phase": "live"})
 

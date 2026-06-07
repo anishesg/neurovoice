@@ -108,6 +108,14 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--black);co
 .btn-pill:hover{opacity:.85}
 .btn-p{background:var(--disp);color:var(--black)}
 .btn-g{background:transparent;border:1px solid var(--bv);color:var(--sec)}
+
+/* STRAND GAUGES */
+.strand-cell{background:var(--raised);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;transition:border-color .3s}
+.strand-cell.hot{border-color:var(--accent)}
+.strand-name{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--sec);margin-bottom:6px}
+.strand-gauge{display:block;margin:0 auto}
+.strand-conf{font-family:'Doto',monospace;font-size:18px;font-weight:700;color:var(--disp);margin-top:4px}
+.strand-reward{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);margin-top:2px}
 </style>
 </head>
 <body>
@@ -182,7 +190,7 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--black);co
 <!-- ═══ VOICE SCREEN ═══ -->
 <div class="screen" id="screen-voice">
 <div class="voice-grid">
-  <!-- LEFT: Conversation + Input -->
+  <!-- LEFT: Conversation -->
   <div class="voice-sidebar">
     <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--sec);letter-spacing:.08em;text-transform:uppercase;cursor:pointer" onclick="showScreen('dashboard')">← DASHBOARD</div>
     <div class="voice-main" style="flex:1">
@@ -196,19 +204,20 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--black);co
     </div>
   </div>
 
-  <!-- RIGHT: Neural Evaluation Arena -->
-  <div style="display:flex;flex-direction:column;gap:12px;overflow-y:auto">
-    <!-- Live brain during eval -->
+  <!-- RIGHT: Neural Computation Dashboard -->
+  <div style="display:flex;flex-direction:column;gap:14px;overflow-y:auto">
+
+    <!-- Live EEG during eval -->
     <div class="card">
       <div class="card-head"><span class="lbl">NEURAL EVALUATION</span><span class="lbl-sm" id="eval-phase">IDLE</span></div>
-      <canvas id="eval-waves" height="80" style="width:100%;background:var(--black);border-radius:4px"></canvas>
+      <canvas id="eval-waves" height="70" style="width:100%;background:var(--black);border-radius:8px"></canvas>
     </div>
 
-    <!-- A/B comparison cards -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <!-- A/B Response Cards -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <div class="card" id="eval-card-a" style="transition:all .3s;opacity:.4">
         <div class="card-head"><span class="lbl" style="color:var(--accent)">RESPONSE A</span><span class="lbl-sm" id="score-a">--</span></div>
-        <div id="eval-text-a" style="font-size:14px;line-height:1.6;min-height:60px;color:var(--dim)">...</div>
+        <div id="eval-text-a" style="font-size:13px;line-height:1.6;min-height:50px;color:var(--dim)">...</div>
         <div style="margin-top:10px">
           <div style="display:flex;justify-content:space-between"><span class="lbl-sm">ENGAGEMENT</span><span class="lbl-sm" id="ea-eng">--</span></div>
           <div style="height:3px;background:var(--border);margin-top:3px"><div id="ea-eng-bar" style="height:100%;width:0%;background:var(--accent);transition:width .3s"></div></div>
@@ -218,7 +227,7 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--black);co
       </div>
       <div class="card" id="eval-card-b" style="transition:all .3s;opacity:.4">
         <div class="card-head"><span class="lbl" style="color:var(--warn)">RESPONSE B</span><span class="lbl-sm" id="score-b">--</span></div>
-        <div id="eval-text-b" style="font-size:14px;line-height:1.6;min-height:60px;color:var(--dim)">...</div>
+        <div id="eval-text-b" style="font-size:13px;line-height:1.6;min-height:50px;color:var(--dim)">...</div>
         <div style="margin-top:10px">
           <div style="display:flex;justify-content:space-between"><span class="lbl-sm">ENGAGEMENT</span><span class="lbl-sm" id="eb-eng">--</span></div>
           <div style="height:3px;background:var(--border);margin-top:3px"><div id="eb-eng-bar" style="height:100%;width:0%;background:var(--accent);transition:width .3s"></div></div>
@@ -228,23 +237,60 @@ body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--black);co
       </div>
     </div>
 
-    <!-- Winner display -->
+    <!-- Winner -->
     <div class="card" id="winner-card" style="display:none;text-align:center;border-color:var(--accent)">
       <div class="lbl" style="color:var(--accent)">BRAIN SELECTED</div>
-      <div id="winner-text" style="font-size:16px;font-weight:600;margin:8px 0;color:var(--disp)"></div>
-      <div style="display:flex;justify-content:center;gap:16px;margin-top:8px">
-        <div><span class="lbl-sm">SCORE A</span><div style="font-family:'Doto',monospace;font-size:20px;color:var(--pri)" id="w-score-a">--</div></div>
-        <div style="font-family:'Doto',monospace;font-size:20px;color:var(--dim)">vs</div>
-        <div><span class="lbl-sm">SCORE B</span><div style="font-family:'Doto',monospace;font-size:20px;color:var(--pri)" id="w-score-b">--</div></div>
+      <div id="winner-text" style="font-size:15px;font-weight:600;margin:8px 0;color:var(--disp)"></div>
+      <div style="display:flex;justify-content:center;gap:20px;margin-top:8px">
+        <div><span class="lbl-sm">SCORE A</span><div style="font-family:'Doto',monospace;font-size:22px;color:var(--pri)" id="w-score-a">--</div></div>
+        <div style="font-family:'Doto',monospace;font-size:18px;color:var(--dim);padding-top:12px">VS</div>
+        <div><span class="lbl-sm">SCORE B</span><div style="font-family:'Doto',monospace;font-size:22px;color:var(--pri)" id="w-score-b">--</div></div>
       </div>
     </div>
 
-    <!-- CTS + Reward + Adapt -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div class="card"><div class="lbl" style="margin-bottom:6px">REWARD</div><div class="sv" id="v-reward" style="color:var(--dim)">--</div><div class="sv-sm">LAST BRAIN REWARD</div></div>
+    <!-- STRAND DECOMPOSITION — the rocket science panel -->
+    <div class="card" id="strand-panel">
+      <div class="card-head"><span class="lbl">STRAND DECOMPOSITION</span><span class="lbl-sm">WHY THIS RESPONSE WON</span></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px" id="strand-cards">
+        <div class="strand-cell" id="sc-content">
+          <div class="strand-name">CONTENT</div>
+          <canvas class="strand-gauge" id="sg-content" width="80" height="80"></canvas>
+          <div class="strand-conf" id="sv-content">--</div>
+          <div class="strand-reward" id="sr-content">--</div>
+        </div>
+        <div class="strand-cell" id="sc-emotion">
+          <div class="strand-name">EMOTION</div>
+          <canvas class="strand-gauge" id="sg-emotion" width="80" height="80"></canvas>
+          <div class="strand-conf" id="sv-emotion">--</div>
+          <div class="strand-reward" id="sr-emotion">--</div>
+        </div>
+        <div class="strand-cell" id="sc-style">
+          <div class="strand-name">STYLE</div>
+          <canvas class="strand-gauge" id="sg-style" width="80" height="80"></canvas>
+          <div class="strand-conf" id="sv-style">--</div>
+          <div class="strand-reward" id="sr-style">--</div>
+        </div>
+        <div class="strand-cell" id="sc-context">
+          <div class="strand-name">CONTEXT</div>
+          <canvas class="strand-gauge" id="sg-context" width="80" height="80"></canvas>
+          <div class="strand-conf" id="sv-context">--</div>
+          <div class="strand-reward" id="sr-context">--</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center">
+        <span class="lbl-sm" id="fusion-agreement">AGREEMENT: --</span>
+        <span class="lbl-sm" id="fusion-temp">TEMPERATURE: --</span>
+      </div>
+    </div>
+
+    <!-- Reward + Adaptation -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="card"><div class="lbl" style="margin-bottom:8px">REWARD</div><div class="sv" id="v-reward" style="color:var(--dim)">--</div><div class="sv-sm">LAST BRAIN REWARD</div></div>
       <div class="adapt-card"><div class="lbl" style="color:var(--accent)">ADAPTATION</div><div class="sv" id="v-adapt" style="color:var(--accent);font-size:28px">0%</div></div>
     </div>
-    <div class="card"><div class="lbl" style="margin-bottom:6px">CTS POSTERIORS</div><div id="v-posteriors"></div></div>
+
+    <!-- CTS Posteriors -->
+    <div class="card"><div class="lbl" style="margin-bottom:8px">CTS POSTERIORS</div><div id="v-posteriors"></div></div>
   </div>
 </div>
 </div>
@@ -326,7 +372,8 @@ function handle(d){
     const r=d.reward;const rt=(r>=0?'+':'')+r.toFixed(3);const rc=r>.05?'var(--success)':r<-.05?'var(--accent)':'var(--dim)';
     $('rw-num').textContent=rt;$('rw-num').style.color=rc;$('v-reward').textContent=rt;$('v-reward').style.color=rc;
     if(d.reward_history)rewardH=d.reward_history;if(d.adaptation!==undefined){updateAdapt(d.adaptation);adaptH.push(d.adaptation)}
-    if(d.posteriors)updatePost(d.posteriors);drawRewardMini()
+    if(d.posteriors)updatePost(d.posteriors);drawRewardMini();
+    if(d.strands)updateStrands(d.strands,d.strand_rewards,d.fusion);
   }else if(d.type==='phase'){$('phase-pill').textContent=d.phase.toUpperCase()}
 }
 
@@ -397,6 +444,71 @@ function drawRewardMini(){
   ctx.strokeStyle='var(--border)';ctx.beginPath();ctx.moveTo(0,mid);ctx.lineTo(W,mid);ctx.stroke();
   const win=Math.max(3,Math.floor(n/8));ctx.beginPath();ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=1.5;
   for(let i=0;i<n;i++){let s=0,c=0;for(let j=Math.max(0,i-win);j<=i;j++){s+=rewardH[j];c++}const x=(i/(n-1))*W,y=mid-(s/c)*mid;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.stroke()
+}
+
+function updateStrands(strands, rewards, fusion) {
+  const names = ['content','emotion','style','context'];
+  const colors = ['#D71921','#D4A843','#4A9E5C','#5B9BF6'];
+  names.forEach((name, i) => {
+    const s = strands[name];
+    if (!s) return;
+    const conf = s.confidence || 0;
+    const reward = rewards ? rewards[name] : 0;
+
+    // Update text
+    $('sv-'+name).textContent = Math.round(conf * 100) + '%';
+    $('sr-'+name).textContent = 'R: ' + (reward >= 0 ? '+' : '') + reward.toFixed(2);
+    $('sr-'+name).style.color = reward > 0.1 ? 'var(--success)' : reward < -0.1 ? 'var(--accent)' : 'var(--dim)';
+
+    // Hot border if high confidence
+    $('sc-'+name).classList.toggle('hot', conf > 0.8);
+
+    // Draw arc gauge
+    const cv = $('sg-'+name);
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    const W = cv.width, H = cv.height, cx = W/2, cy = H/2, r = 30;
+    ctx.clearRect(0, 0, W, H);
+
+    // Background arc
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0.75 * Math.PI, 2.25 * Math.PI);
+    ctx.strokeStyle = '#1C1C1C';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // Confidence arc
+    const sweep = conf * 1.5 * Math.PI;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0.75 * Math.PI, 0.75 * Math.PI + sweep);
+    ctx.strokeStyle = colors[i];
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // Glow on high confidence
+    if (conf > 0.7) {
+      ctx.shadowColor = colors[i];
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0.75 * Math.PI, 0.75 * Math.PI + sweep);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    // Memory count in center
+    ctx.fillStyle = '#555';
+    ctx.font = '8px "Space Mono",monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText((s.memory_entries || 0) + ' mem', cx, cy + 3);
+  });
+
+  // Fusion state
+  if (fusion) {
+    $('fusion-agreement').textContent = 'AGREEMENT: ' + ((fusion.agreement || 0) * 100).toFixed(0) + '%';
+    $('fusion-temp').textContent = 'TEMPERATURE: ' + (fusion.temperature || 1).toFixed(2);
+  }
 }
 
 function drawEvalWaves(){
