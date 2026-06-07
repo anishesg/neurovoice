@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Axiom — Neural Interface</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Doto:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--black:#000;--surface:#0D0D0D;--raised:#161616;--border:#1C1C1C;--bv:#2A2A2A;--dim:#555;--sec:#888;--pri:#D4D4D4;--disp:#F0F0F0;--accent:#D71921;--accsub:rgba(215,25,33,.12);--success:#4A9E5C;--warn:#D4A843}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--black);color:var(--pri);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid var(--border)}
+.logo{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--disp);display:flex;align-items:center;gap:10px}
+.logo-dot{width:8px;height:8px;background:var(--accent);border-radius:50%}
+.nav-items{display:flex;gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:3px}
+.nav-item{padding:8px 18px;border-radius:7px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;color:var(--sec);transition:all .2s cubic-bezier(.25,.1,.25,1)}
+.nav-item.active{background:var(--raised);color:var(--disp)}
+.nav-item:hover{color:var(--pri)}
+.topbar-r{display:flex;gap:8px;align-items:center}
+.pill{display:flex;align-items:center;gap:5px;padding:6px 14px;border-radius:999px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--bv);color:var(--sec)}
+.dot{width:6px;height:6px;border-radius:50%}.dot-on{background:var(--success);box-shadow:0 0 6px var(--success)}.dot-off{background:var(--accent);box-shadow:0 0 4px var(--accent)}
+
+/* ── SCREENS ── */
+.screen{display:none;padding:32px 36px;max-width:1480px;margin:0 auto}
+.screen.active{display:block}
+
+/* ── DASHBOARD ── */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.dash-left{display:flex;flex-direction:column;gap:20px}
+.dash-right{display:flex;flex-direction:column;gap:20px}
+
+.hero{font-family:'Doto',monospace;font-size:48px;font-weight:800;line-height:1.05;letter-spacing:-.03em;color:var(--disp);padding:4px 0 8px}
+.hero span{color:var(--accent)}
+
+/* LIVE WAVES CARD */
+.waves-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px 24px}
+.waves-card .wc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.lbl{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--sec)}
+.lbl-sm{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+#waves-canvas{width:100%;border-radius:8px}
+
+/* BRAIN STATE ROW */
+.brain-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.brain-cell{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 12px;text-align:center}
+.brain-cell .bc-val{font-family:'Doto',monospace;font-size:32px;font-weight:700;color:var(--disp);line-height:1}
+.brain-cell .bc-lbl{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--sec);margin-top:6px}
+.brain-cell .bc-bar{height:3px;background:var(--border);border-radius:0;margin-top:10px;overflow:hidden}
+.brain-cell .bc-fill{height:100%;transition:width .2s cubic-bezier(.25,.1,.25,1)}
+
+/* FINGERPRINT CARD */
+.fp-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px 24px;position:relative}
+.fp-body{display:flex;align-items:center;justify-content:center;height:260px;position:relative}
+.fp-center{position:absolute;text-align:center}
+.fp-center .fp-num{font-family:'Doto',monospace;font-size:56px;font-weight:700;color:var(--disp);line-height:1}
+.fp-center .fp-unit{font-family:'Space Mono',monospace;font-size:10px;color:var(--sec);letter-spacing:.1em;text-transform:uppercase;margin-top:4px}
+
+/* SMALL CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px}
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.card-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sv{font-family:'Doto',monospace;font-size:30px;font-weight:700;color:var(--disp);line-height:1}
+.sv-sm{font-family:'Space Mono',monospace;font-size:9px;color:var(--sec);letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
+
+/* POSTERIORS */
+.p-row{display:flex;align-items:center;margin-bottom:5px}
+.p-name{width:60px;font-family:'Space Mono',monospace;font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.p-bar{flex:1;height:8px;background:var(--raised);position:relative;overflow:hidden;margin:0 8px}
+.p-fill{position:absolute;top:1px;bottom:1px;transition:all .5s cubic-bezier(.25,.1,.25,1)}
+.p-mean{position:absolute;top:0;bottom:0;width:2px;background:var(--disp);transition:left .5s cubic-bezier(.25,.1,.25,1);z-index:2}
+.p-val{width:32px;text-align:right;font-family:'Space Mono',monospace;font-size:9px;color:var(--sec);font-variant-numeric:tabular-nums}
+
+/* ADAPT CARD */
+.adapt-card{background:var(--accsub);border:1px solid rgba(215,25,33,.2);border-radius:14px;padding:18px 20px;text-align:center}
+
+/* AGENT LINKS */
+.agent-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.agent-link{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px 16px;cursor:pointer;transition:all .2s cubic-bezier(.25,.1,.25,1);text-align:center}
+.agent-link:hover{border-color:var(--bv)}
+.agent-link .al-icon{font-size:28px;margin-bottom:12px}
+.agent-link .al-name{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--pri)}
+.agent-link .al-status{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);margin-top:4px;letter-spacing:.06em;text-transform:uppercase}
+
+/* ── VOICE SCREEN ── */
+.voice-grid{display:grid;grid-template-columns:360px 1fr;gap:20px;height:calc(100vh - 72px)}
+.voice-sidebar{display:flex;flex-direction:column;gap:14px;overflow-y:auto;padding-right:4px}
+.voice-main{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.convo{flex:1;overflow-y:auto;padding:20px}
+.msg{max-width:80%;margin-bottom:12px;padding:12px 16px;font-size:14px;line-height:1.6}
+.msg-them{background:var(--raised);border:1px solid var(--border);border-radius:14px 14px 14px 4px}
+.msg-me{background:var(--accsub);border:1px solid rgba(215,25,33,.2);margin-left:auto;border-radius:14px 14px 4px 14px}
+.msg .who{font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.stt-box{margin:0 20px 8px;padding:10px 14px;background:var(--raised);border:1px solid var(--bv);border-radius:10px;font-family:'Space Mono',monospace;font-size:10px;color:var(--warn);letter-spacing:.04em}
+.stt-box.hearing{border-color:var(--warn);background:rgba(212,168,67,.06)}
+.cand-area{padding:12px 20px;border-top:1px solid var(--border)}
+.cand-area h3{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.cand{padding:10px 14px;margin-bottom:6px;background:var(--raised);border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;display:flex;gap:10px;transition:all .2s cubic-bezier(.25,.1,.25,1)}
+.cand:hover{border-color:var(--bv)}
+.cand.sel{border-color:var(--accent);background:var(--accsub)}
+.cand .n{font-family:'Space Mono',monospace;color:var(--dim);font-weight:700;font-size:11px;min-width:16px}
+.input-bar{display:flex;gap:10px;padding:16px 20px;border-top:1px solid var(--border)}
+.input-bar input{flex:1;padding:10px 0;background:transparent;border:none;border-bottom:1px solid var(--bv);color:var(--pri);font-family:'Space Mono',monospace;font-size:13px;outline:none;transition:border-color .2s}
+.input-bar input:focus{border-bottom-color:var(--pri)}
+.btn-pill{padding:10px 20px;border-radius:999px;border:none;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:opacity .2s}
+.btn-pill:hover{opacity:.85}
+.btn-p{background:var(--disp);color:var(--black)}
+.btn-g{background:transparent;border:1px solid var(--bv);color:var(--sec)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><span class="logo-dot"></span>AXIOM</div>
+  <div class="nav-items">
+    <div class="nav-item active" onclick="showScreen('dashboard')">DASHBOARD</div>
+    <div class="nav-item" onclick="showScreen('voice')">VOICE</div>
+    <div class="nav-item" onclick="showScreen('rover')">ROVER</div>
+    <div class="nav-item" onclick="showScreen('computer')">COMPUTER USE</div>
+  </div>
+  <div class="topbar-r">
+    <div class="pill"><span class="dot dot-off" id="dot-eeg"></span>MUSE S</div>
+    <div class="pill"><span class="dot dot-on"></span>MIC</div>
+    <div class="pill" id="phase-pill" style="border-color:var(--accent);color:var(--accent)">--</div>
+  </div>
+</div>
+
+<!-- ═══ DASHBOARD ═══ -->
+<div class="screen active" id="screen-dashboard">
+<div class="dash-grid">
+  <div class="dash-left">
+    <div class="hero">Read Your<br><span>Mind.</span></div>
+
+    <!-- LIVE EEG WAVES -->
+    <div class="waves-card">
+      <div class="wc-head"><span class="lbl">LIVE EEG WAVES</span><span class="lbl-sm">4CH · 256HZ · MUSE S</span></div>
+      <canvas id="waves-canvas" height="180" style="background:var(--black);border-radius:4px"></canvas>
+    </div>
+
+    <!-- BRAIN STATE -->
+    <div class="brain-row" id="brain-row">
+      <div class="brain-cell"><div class="bc-val" id="bv-eng">0</div><div class="bc-lbl">ENG</div><div class="bc-bar"><div class="bc-fill" id="bf-eng" style="width:0%;background:#D71921"></div></div></div>
+      <div class="brain-cell"><div class="bc-val" id="bv-foc">0</div><div class="bc-lbl">FOCUS</div><div class="bc-bar"><div class="bc-fill" id="bf-foc" style="width:0%;background:#D4A843"></div></div></div>
+      <div class="brain-cell"><div class="bc-val" id="bv-val">50</div><div class="bc-lbl">VALENCE</div><div class="bc-bar"><div class="bc-fill" id="bf-val" style="width:50%;background:#4A9E5C"></div></div></div>
+      <div class="brain-cell"><div class="bc-val" id="bv-rel">0</div><div class="bc-lbl">RELAX</div><div class="bc-bar"><div class="bc-fill" id="bf-rel" style="width:0%;background:#5B9BF6"></div></div></div>
+      <div class="brain-cell"><div class="bc-val" id="bv-cog">0</div><div class="bc-lbl">COG</div><div class="bc-bar"><div class="bc-fill" id="bf-cog" style="width:0%;background:var(--sec)"></div></div></div>
+    </div>
+
+    <div class="card-row">
+      <div class="card"><div class="card-head"><span class="lbl">DEVICE</span><span class="lbl-sm" id="dev-st">CONNECTED</span></div><div style="display:flex;align-items:center;gap:10px;margin-top:4px"><div style="width:36px;height:36px;border-radius:10px;background:var(--raised);border:1px solid var(--bv);display:flex;align-items:center;justify-content:center;font-size:16px">🧠</div><div><div style="font-size:13px;font-weight:600">Muse S</div><div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--sec);display:flex;align-items:center;gap:4px"><span class="dot dot-on" id="dot-dev"></span>STREAMING</div></div></div></div>
+      <div class="card"><div class="card-head"><span class="lbl">RL ENGINE</span><span class="lbl-sm">CTS BANDIT</span></div><div style="display:flex;justify-content:space-between;margin-top:4px"><div><div class="sv" id="rl-n">0</div><div class="sv-sm">UPDATES</div></div><div><div class="sv" id="rl-e">--</div><div class="sv-sm">EXPLORE</div></div></div></div>
+    </div>
+  </div>
+
+  <div class="dash-right">
+    <!-- FINGERPRINT -->
+    <div class="fp-card">
+      <div class="card-head"><span class="lbl">NEURAL FINGERPRINT</span><span class="lbl-sm">LIVE · UNIQUE PER BRAIN</span></div>
+      <div class="fp-body"><canvas id="fp-canvas" width="380" height="220"></canvas><div class="fp-center"><div class="fp-num" id="fp-num">0%</div><div class="fp-unit">ADAPTED</div></div></div>
+    </div>
+
+    <!-- STATS + POSTERIORS -->
+    <div class="card-row">
+      <div class="card"><div class="lbl" style="margin-bottom:6px">REWARD</div><div class="sv" id="rw-num" style="color:var(--dim)">--</div><div class="sv-sm">LAST BRAIN REWARD</div></div>
+      <div class="adapt-card"><div class="lbl" style="color:var(--accent)">ADAPTATION</div><div class="sv" id="ad-pct" style="color:var(--accent);font-size:32px">0%</div><div class="sv-sm" style="color:var(--accent)">NEURAL RL</div></div>
+    </div>
+
+    <div class="card"><div class="lbl" style="margin-bottom:8px">CTS POSTERIORS</div><div id="posteriors"></div></div>
+
+    <!-- AGENT LINKS -->
+    <div class="agent-grid">
+      <div class="agent-link" onclick="showScreen('voice')"><div class="al-icon">🗣️</div><div class="al-name">VOICE</div><div class="al-status">ACTIVE · LIVE</div></div>
+      <div class="agent-link" onclick="showScreen('rover')"><div class="al-icon">🤖</div><div class="al-name">ROVER</div><div class="al-status">COMING SOON</div></div>
+      <div class="agent-link" onclick="showScreen('computer')"><div class="al-icon">💻</div><div class="al-name">COMPUTER USE</div><div class="al-status">COMING SOON</div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══ VOICE SCREEN ═══ -->
+<div class="screen" id="screen-voice">
+<div class="voice-grid">
+  <!-- LEFT: Conversation + Input -->
+  <div class="voice-sidebar">
+    <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--sec);letter-spacing:.08em;text-transform:uppercase;cursor:pointer" onclick="showScreen('dashboard')">← DASHBOARD</div>
+    <div class="voice-main" style="flex:1">
+      <div class="convo" id="convo" style="max-height:none"></div>
+      <div class="stt-box" id="stt-box">LISTENING · <span id="stt-text">WAITING FOR SPEECH...</span></div>
+      <div class="input-bar">
+        <input type="text" id="msg-in" placeholder="type what they said..." />
+        <button class="btn-pill btn-p" onclick="sendMsg()">SEND</button>
+        <button class="btn-pill btn-g" onclick="newChat()">NEW</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Neural Evaluation Arena -->
+  <div style="display:flex;flex-direction:column;gap:12px;overflow-y:auto">
+    <!-- Live brain during eval -->
+    <div class="card">
+      <div class="card-head"><span class="lbl">NEURAL EVALUATION</span><span class="lbl-sm" id="eval-phase">IDLE</span></div>
+      <canvas id="eval-waves" height="80" style="width:100%;background:var(--black);border-radius:4px"></canvas>
+    </div>
+
+    <!-- A/B comparison cards -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="card" id="eval-card-a" style="transition:all .3s;opacity:.4">
+        <div class="card-head"><span class="lbl" style="color:var(--accent)">RESPONSE A</span><span class="lbl-sm" id="score-a">--</span></div>
+        <div id="eval-text-a" style="font-size:14px;line-height:1.6;min-height:60px;color:var(--dim)">...</div>
+        <div style="margin-top:10px">
+          <div style="display:flex;justify-content:space-between"><span class="lbl-sm">ENGAGEMENT</span><span class="lbl-sm" id="ea-eng">--</span></div>
+          <div style="height:3px;background:var(--border);margin-top:3px"><div id="ea-eng-bar" style="height:100%;width:0%;background:var(--accent);transition:width .3s"></div></div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px"><span class="lbl-sm">VALENCE</span><span class="lbl-sm" id="ea-val">--</span></div>
+          <div style="height:3px;background:var(--border);margin-top:3px"><div id="ea-val-bar" style="height:100%;width:50%;background:var(--success);transition:width .3s"></div></div>
+        </div>
+      </div>
+      <div class="card" id="eval-card-b" style="transition:all .3s;opacity:.4">
+        <div class="card-head"><span class="lbl" style="color:var(--warn)">RESPONSE B</span><span class="lbl-sm" id="score-b">--</span></div>
+        <div id="eval-text-b" style="font-size:14px;line-height:1.6;min-height:60px;color:var(--dim)">...</div>
+        <div style="margin-top:10px">
+          <div style="display:flex;justify-content:space-between"><span class="lbl-sm">ENGAGEMENT</span><span class="lbl-sm" id="eb-eng">--</span></div>
+          <div style="height:3px;background:var(--border);margin-top:3px"><div id="eb-eng-bar" style="height:100%;width:0%;background:var(--accent);transition:width .3s"></div></div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px"><span class="lbl-sm">VALENCE</span><span class="lbl-sm" id="eb-val">--</span></div>
+          <div style="height:3px;background:var(--border);margin-top:3px"><div id="eb-val-bar" style="height:100%;width:50%;background:var(--success);transition:width .3s"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Winner display -->
+    <div class="card" id="winner-card" style="display:none;text-align:center;border-color:var(--accent)">
+      <div class="lbl" style="color:var(--accent)">BRAIN SELECTED</div>
+      <div id="winner-text" style="font-size:16px;font-weight:600;margin:8px 0;color:var(--disp)"></div>
+      <div style="display:flex;justify-content:center;gap:16px;margin-top:8px">
+        <div><span class="lbl-sm">SCORE A</span><div style="font-family:'Doto',monospace;font-size:20px;color:var(--pri)" id="w-score-a">--</div></div>
+        <div style="font-family:'Doto',monospace;font-size:20px;color:var(--dim)">vs</div>
+        <div><span class="lbl-sm">SCORE B</span><div style="font-family:'Doto',monospace;font-size:20px;color:var(--pri)" id="w-score-b">--</div></div>
+      </div>
+    </div>
+
+    <!-- CTS + Reward + Adapt -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="card"><div class="lbl" style="margin-bottom:6px">REWARD</div><div class="sv" id="v-reward" style="color:var(--dim)">--</div><div class="sv-sm">LAST BRAIN REWARD</div></div>
+      <div class="adapt-card"><div class="lbl" style="color:var(--accent)">ADAPTATION</div><div class="sv" id="v-adapt" style="color:var(--accent);font-size:28px">0%</div></div>
+    </div>
+    <div class="card"><div class="lbl" style="margin-bottom:6px">CTS POSTERIORS</div><div id="v-posteriors"></div></div>
+  </div>
+</div>
+</div>
+
+<!-- ═══ ROVER / COMPUTER ═══ -->
+<div class="screen" id="screen-rover"><div style="display:flex;align-items:center;justify-content:center;height:calc(100vh - 100px)"><div style="text-align:center"><div style="font-size:48px;margin-bottom:16px">🤖</div><div style="font-family:'Doto',monospace;font-size:32px;color:var(--disp)">ROVER</div><div class="lbl" style="margin-top:8px">[COMING SOON]</div><div class="lbl-sm" style="margin-top:16px;cursor:pointer" onclick="showScreen('dashboard')">← BACK TO DASHBOARD</div></div></div></div>
+<div class="screen" id="screen-computer"><div style="display:flex;align-items:center;justify-content:center;height:calc(100vh - 100px)"><div style="text-align:center"><div style="font-size:48px;margin-bottom:16px">💻</div><div style="font-family:'Doto',monospace;font-size:32px;color:var(--disp)">COMPUTER USE</div><div class="lbl" style="margin-top:8px">[COMING SOON]</div><div class="lbl-sm" style="margin-top:16px;cursor:pointer" onclick="showScreen('dashboard')">← BACK TO DASHBOARD</div></div></div></div>
+
+<script>
+const PC=["#D71921","#D4A843","#4A9E5C","#5B9BF6","#D71921","#999","#E8E8E8","#666"];
+let ws,brainH=[],conv=[],cands=[],rewardH=[],adaptH=[],posteriors={},fp=null,rawEEG=[];
+const $=id=>document.getElementById(id);
+
+function showScreen(s){
+  document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active'));
+  $(('screen-'+s)).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el=>{if(el.textContent.toLowerCase().includes(s))el.classList.add('active')});
+}
+
+function connect(){ws=new WebSocket('ws://127.0.0.1:8765');ws.onclose=()=>setTimeout(connect,2000);ws.onmessage=e=>handle(JSON.parse(e.data))}
+
+function handle(d){
+  if(d.type==='tick'){
+    updateBrain(d.brain);if(d.fingerprint)fp=d.fingerprint;
+    if(d.posteriors)updatePost(d.posteriors);if(d.adaptation!==undefined)updateAdapt(d.adaptation);
+    if(d.rl_stats){$('rl-n').textContent=d.rl_stats.total_updates;$('rl-e').textContent=(d.rl_stats.exploration_rate||0).toFixed(2)}
+    drawWaves();drawFP()
+  }else if(d.type==='init'){$('dot-eeg').className='dot dot-on';$('dot-dev').className='dot dot-on';if(d.conversation){conv=d.conversation;renderConv()}
+  }else if(d.type==='stt'){if(d.hearing)$('stt-box').classList.add('hearing');if(d.text)$('stt-text').textContent=d.text.toUpperCase();if(d.final){$('stt-text').textContent='WAITING FOR SPEECH...';$('stt-box').classList.remove('hearing')}
+  }else if(d.type==='eval_start'){
+    $('eval-phase').textContent='GENERATING...';
+    $('eval-card-a').style.opacity='.4';$('eval-card-b').style.opacity='.4';
+    $('eval-text-a').textContent='...';$('eval-text-b').textContent='...';
+    $('eval-text-a').style.color='var(--dim)';$('eval-text-b').style.color='var(--dim)';
+    $('score-a').textContent='--';$('score-b').textContent='--';
+    $('winner-card').style.display='none';
+    $('ea-eng').textContent='--';$('ea-val').textContent='--';$('eb-eng').textContent='--';$('eb-val').textContent='--';
+    $('ea-eng-bar').style.width='0%';$('ea-val-bar').style.width='50%';$('eb-eng-bar').style.width='0%';$('eb-val-bar').style.width='50%';
+    if(d.posteriors)updatePost(d.posteriors);
+    showScreen('voice');
+  }else if(d.type==='eval_response'){
+    const card=$('eval-card-'+d.label.toLowerCase());
+    card.style.opacity='1';card.style.borderColor=d.label==='A'?'var(--accent)':'var(--warn)';
+    $('eval-phase').textContent='READING '+d.label+'...';
+    // Word-by-word reveal
+    const el=$('eval-text-'+d.label.toLowerCase());
+    el.style.color='var(--disp)';
+    const words=d.text.split(' ');let wi=0;
+    el.textContent='';
+    const iv=setInterval(()=>{if(wi>=words.length){clearInterval(iv);return}
+      el.textContent+=(wi>0?' ':'')+words[wi];wi++},120);
+  }else if(d.type==='eval_brain_sample'){
+    const pre=d.label==='A'?'ea':'eb';
+    $(`${pre}-eng`).textContent=(d.engagement*100).toFixed(0)+'%';
+    $(`${pre}-val`).textContent=(d.valence*100).toFixed(0)+'%';
+    $(`${pre}-eng-bar`).style.width=(d.engagement*100)+'%';
+    $(`${pre}-val-bar`).style.width=(d.valence*100)+'%';
+    drawEvalWaves();
+  }else if(d.type==='eval_score'){
+    $('score-'+d.label.toLowerCase()).textContent='SCORE: '+(d.score*100).toFixed(1);
+    const card=$('eval-card-'+d.label.toLowerCase());
+    card.style.borderColor='var(--bv)';
+  }else if(d.type==='eval_winner'){
+    $('eval-phase').textContent='WINNER: '+d.winner_label;
+    $('winner-card').style.display='block';
+    $('winner-text').textContent=d.text;
+    $('w-score-a').textContent=(d.score_a*100).toFixed(1);
+    $('w-score-b').textContent=(d.score_b*100).toFixed(1);
+    const wCard=$('eval-card-'+d.winner_label.toLowerCase());
+    wCard.style.borderColor='var(--success)';wCard.style.opacity='1';
+    const lCard=$('eval-card-'+(d.winner_label==='A'?'b':'a'));
+    lCard.style.opacity='.3';
+    $('w-score-'+d.winner_label.toLowerCase()).style.color='var(--success)';
+  }else if(d.type==='candidates'){cands=d.candidates||[];if(d.posteriors)updatePost(d.posteriors)
+  }else if(d.type==='selected'){
+  }else if(d.type==='conversation'){conv=d.conversation;renderConv()
+  }else if(d.type==='reward'){
+    const r=d.reward;const rt=(r>=0?'+':'')+r.toFixed(3);const rc=r>.05?'var(--success)':r<-.05?'var(--accent)':'var(--dim)';
+    $('rw-num').textContent=rt;$('rw-num').style.color=rc;$('v-reward').textContent=rt;$('v-reward').style.color=rc;
+    if(d.reward_history)rewardH=d.reward_history;if(d.adaptation!==undefined){updateAdapt(d.adaptation);adaptH.push(d.adaptation)}
+    if(d.posteriors)updatePost(d.posteriors);drawRewardMini()
+  }else if(d.type==='phase'){$('phase-pill').textContent=d.phase.toUpperCase()}
+}
+
+function updateBrain(b){
+  if(!b)return;brainH.push(b);if(brainH.length>600)brainH=brainH.slice(-600);
+  $('dot-eeg').className='dot '+(b.connected?'dot-on':'dot-off');$('dot-dev').className='dot '+(b.connected?'dot-on':'dot-off');
+  $('dev-st').textContent=b.connected?'CONNECTED':'DISCONNECTED';
+  // Dashboard cells
+  const pairs=[['eng',b.engagement],['foc',b.focus],['val',b.valence],['rel',b.relaxation],['cog',b.cognitive_load]];
+  pairs.forEach(([k,v])=>{$('bv-'+k).textContent=Math.round(v*100);$('bf-'+k).style.width=(v*100)+'%'});
+  // Voice sidebar brain
+  $('v-intent').textContent=b.intent.toUpperCase()+' '+Math.round(b.intent_conf*100)+'%';
+  const vb=$('v-brain');
+  if(vb.children.length===0){pairs.forEach(([k])=>{vb.innerHTML+=`<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span class="lbl-sm">${k.toUpperCase()}</span><span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--disp)" id="vb-${k}">0</span></div>`})}
+  pairs.forEach(([k,v])=>{const el=$('vb-'+k);if(el)el.textContent=(v*100).toFixed(0)+'%'});
+  // Store raw band data for waves
+  if(b.bands)rawEEG.push(b.bands);if(rawEEG.length>200)rawEEG=rawEEG.slice(-200);
+}
+
+function updatePost(p){
+  posteriors=p;
+  ['posteriors','v-posteriors'].forEach(cid=>{
+    const c=$(cid),keys=Object.keys(p);
+    if(c.children.length!==keys.length){c.innerHTML='';
+      keys.forEach((k,i)=>{c.innerHTML+=`<div class="p-row"><span class="p-name">${k.slice(0,7)}</span><div class="p-bar"><div class="p-fill" id="${cid}-pf-${k}" style="background:${PC[i%8]}30"></div><div class="p-mean" id="${cid}-pm-${k}"></div></div><span class="p-val" id="${cid}-pv-${k}">0.50</span></div>`})}
+    keys.forEach(k=>{const d=p[k];
+      const f=$(`${cid}-pf-${k}`),m=$(`${cid}-pm-${k}`),v=$(`${cid}-pv-${k}`);
+      if(f){f.style.left=(d.low*100)+'%';f.style.width=((d.high-d.low)*100)+'%'}
+      if(m)m.style.left=(d.mean*100)+'%';if(v)v.textContent=d.mean.toFixed(2)})
+  })
+}
+
+function updateAdapt(s){$('ad-pct').textContent=Math.round(s)+'%';$('fp-num').textContent=Math.round(s)+'%';$('v-adapt').textContent=Math.round(s)+'%'}
+
+function drawWaves(){
+  const cv=$('waves-canvas');if(!cv)return;
+  cv.width=cv.clientWidth;const ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const n=Math.min(brainH.length,120);if(n<2)return;
+  const rec=brainH.slice(-n);
+  const bands=[['engagement','#D71921'],['focus','#D4A843'],['valence','#4A9E5C'],['relaxation','#5B9BF6']];
+  bands.forEach(([key,col],bi)=>{
+    ctx.beginPath();ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.globalAlpha=.7;
+    const yOff=H*(bi+.5)/bands.length;
+    rec.forEach((b,i)=>{const x=(i/(n-1))*W;const v=(b[key]||0)-.5;const y=yOff-v*H/bands.length*.8;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});
+    ctx.stroke();ctx.globalAlpha=1;
+    ctx.fillStyle=col;ctx.font='700 8px "Space Mono",monospace';ctx.fillText(key.slice(0,3).toUpperCase(),4,yOff-H/bands.length*.35)
+  })
+}
+
+function drawFP(){
+  const cv=$('fp-canvas');if(!cv||!fp)return;
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height,cx=W/2,cy=H/2,r=85;
+  ctx.clearRect(0,0,W,H);
+  const axes=fp.axes,vals=fp.values,n=axes.length,t=Date.now()/1000;
+  const g=ctx.createRadialGradient(cx,cy,r*.1,cx,cy,r*1.3);g.addColorStop(0,'rgba(215,25,33,.08)');g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  for(let ring=.25;ring<=1;ring+=.25){ctx.beginPath();ctx.strokeStyle=`rgba(215,25,33,${.04+Math.sin(t*1.5+ring*4)*.02})`;ctx.lineWidth=.5;for(let i=0;i<=n;i++){const a=-Math.PI/2+i*2*Math.PI/n;ctx.lineTo(cx+Math.cos(a)*r*ring,cy+Math.sin(a)*r*ring)}ctx.closePath();ctx.stroke()}
+  ctx.beginPath();ctx.fillStyle='rgba(215,25,33,.1)';ctx.strokeStyle='rgba(215,25,33,.7)';ctx.lineWidth=1.5;
+  for(let i=0;i<n;i++){const a=-Math.PI/2+i*2*Math.PI/n,v=vals[i];ctx.lineTo(cx+Math.cos(a)*r*v,cy+Math.sin(a)*r*v)}ctx.closePath();ctx.fill();ctx.stroke();
+  for(let i=0;i<n;i++){const a=-Math.PI/2+i*2*Math.PI/n,v=vals[i];ctx.beginPath();ctx.arc(cx+Math.cos(a)*r*v,cy+Math.sin(a)*r*v,2.5,0,Math.PI*2);ctx.fillStyle='#D71921';ctx.fill();
+    ctx.fillStyle='#555';ctx.font='8px "Space Mono",monospace';ctx.textAlign='center';ctx.fillText(axes[i].replace('_',' ').toUpperCase().slice(0,7),cx+Math.cos(a)*(r+14),cy+Math.sin(a)*(r+14)+3)}
+}
+
+function drawRewardMini(){
+  const cv=$('v-reward-canvas');if(!cv||rewardH.length<2)return;
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+  const n=rewardH.length,mid=H/2;
+  ctx.strokeStyle='var(--border)';ctx.beginPath();ctx.moveTo(0,mid);ctx.lineTo(W,mid);ctx.stroke();
+  const win=Math.max(3,Math.floor(n/8));ctx.beginPath();ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=1.5;
+  for(let i=0;i<n;i++){let s=0,c=0;for(let j=Math.max(0,i-win);j<=i;j++){s+=rewardH[j];c++}const x=(i/(n-1))*W,y=mid-(s/c)*mid;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.stroke()
+}
+
+function drawEvalWaves(){
+  const cv=$('eval-waves');if(!cv)return;cv.width=cv.clientWidth;
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+  const n=Math.min(brainH.length,80);if(n<2)return;const rec=brainH.slice(-n);
+  [['engagement','#D71921'],['valence','#4A9E5C'],['focus','#D4A843']].forEach(([k,c],bi)=>{
+    ctx.beginPath();ctx.strokeStyle=c;ctx.lineWidth=1.5;ctx.globalAlpha=.8;
+    rec.forEach((b,i)=>{const x=(i/(n-1))*W,y=H*(1-(b[k]||0));i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});
+    ctx.stroke();ctx.globalAlpha=1});
+}
+
+function renderConv(){const c=$('convo');c.innerHTML='';conv.forEach(m=>{const me=m.speaker==='Me';c.innerHTML+=`<div class="msg ${me?'msg-me':'msg-them'}"><div class="who">${m.speaker}</div>${m.text}</div>`});c.scrollTop=c.scrollHeight}
+function renderCands(){const c=$('cands');c.innerHTML='';cands.forEach((d,i)=>{const div=document.createElement('div');div.className='cand';div.innerHTML=`<span class="n">${i+1}</span>${d.text}`;div.onclick=()=>ws.send(JSON.stringify({cmd:'select',index:i}));c.appendChild(div)})}
+function sendMsg(){const t=$('msg-in').value.trim();if(!t||!ws)return;ws.send(JSON.stringify({cmd:'message',speaker:'Them',text:t}));$('msg-in').value=''}
+function newChat(){if(ws)ws.send(JSON.stringify({cmd:'new_chat'}));conv=[];cands=[];rewardH=[];adaptH=[];rawEEG=[];renderConv();$('cands').innerHTML='';drawWaves();drawRewardMini()}
+$('msg-in').addEventListener('keypress',e=>{if(e.key==='Enter')sendMsg()});
+connect();setInterval(()=>{drawWaves();drawFP()},500);
+</script>
+</body>
+</html>

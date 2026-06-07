@@ -1,0 +1,7 @@
+brainflow>=5.22.0
+numpy>=1.24
+scipy>=1.12
+anthropic>=0.40
+openai>=1.30
+websockets>=12.0
+sounddevice>=0.5
