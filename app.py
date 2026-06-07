@@ -566,18 +566,7 @@ class NeuroVoiceApp:
         self.conversation.append({"speaker": "Me", "text": selected})
         await self._broadcast("conversation", {"conversation": self.conversation})
 
-        self.phase = "speaking"
-        await self._broadcast("phase", {"phase": "speaking"})
-
-        self.stt.muted = True
-        try:
-            await loop.run_in_executor(None, self.tts.speak, selected, self.brain)
-        except Exception as e:
-            print(f"[APP] TTS error: {e}", flush=True)
-        finally:
-            await asyncio.sleep(0.3)
-            self.stt.muted = False
-
+        # Compute reward + strands BEFORE TTS so UI gets data immediately
         post_snap = BrainSnapshot(
             engagement=self.brain.engagement, focus=self.brain.focus,
             valence=self.brain.valence, cognitive_load=self.brain.cognitive_load,
@@ -588,57 +577,58 @@ class NeuroVoiceApp:
         reward = self.reward.compute(post_snap)
         self.policy.update(reward)
 
-        # Braid: fuse strands + decompose reward into dimensions
         braid_ctx = post_snap.to_context()
-        braid_output = self.braid.fuse(braid_ctx)
+        self.braid.fuse(braid_ctx)
         brain_dims = {"engagement": self.brain.engagement, "valence": self.brain.valence,
                       "focus": self.brain.focus, "cognitive_load": self.brain.cognitive_load}
         strand_rewards = self.braid.decompose_reward(brain_dims, reward)
         self.braid.step(strand_rewards, braid_ctx)
-
-        # Ground the LLM: feed back what worked/didn't for next generation
         self.llm._interpreter.record_outcome(selected, reward, brain_dims)
 
         adapt_score = self.adaptation.update(
             reward, self.policy.exploration_rate, self.policy.std)
 
-        # ── Weave: trace + log + publish ──
-        winner_label = "A" if winner == 0 else "B"
-        brain_features = {
-            "engagement": self.brain.engagement, "focus": self.brain.focus,
-            "valence": self.brain.valence, "cognitive_load": self.brain.cognitive_load,
-        }
-        self.weave.trace_pipeline(
-            brain_features, intent, style_dict, self.candidates,
-            score_a, score_b, winner_label,
-            brain_samples_a, brain_samples_b,
-            reward, adapt_score, self.policy._total_updates)
-        self.weave.log_episode(
-            ctx.tolist(), style_dict, self.candidates,
-            score_a, score_b, winner_label, reward, adapt_score,
-            self.policy._total_updates, intent)
-        if self.policy._total_updates % 5 == 0:
-            self.weave.publish_policy(self.policy, STYLE_PARAMS)
-        if self.policy._total_updates % 20 == 0:
-            self.weave.run_eval(self.policy, STYLE_PARAMS)
-        self.redis.publish_rl_update(reward, self.policy.get_posteriors(), adapt_score)
-
-        self._generating = False
-        self.phase = "live"
+        # Broadcast reward + strands to UI IMMEDIATELY (before TTS)
         await self._broadcast("reward", {
             "reward": round(reward, 4),
             "adaptation": round(adapt_score, 1),
-            "adaptation_breakdown": self.adaptation.get_breakdown(),
             "posteriors": self.policy.get_posteriors(),
-            "trajectories": self.policy.get_trajectories(),
             "reward_history": self.reward.get_history(),
             "rl_stats": self.policy.get_stats(),
-            "weave_episodes": self.weave.episode_count,
             "strands": self.braid.get_strand_stats(),
             "strand_rewards": strand_rewards,
             "fusion": self.braid.get_fusion_state(),
             "strand_confidences": self.braid.get_confidence_map(),
         })
+
+        # NOW speak (non-blocking for UI)
+        self.phase = "speaking"
+        await self._broadcast("phase", {"phase": "speaking"})
+        self.stt.muted = True
+        try:
+            await loop.run_in_executor(None, self.tts.speak, selected, self.brain)
+        except Exception as e:
+            print(f"[APP] TTS error: {e}", flush=True)
+        finally:
+            await asyncio.sleep(0.3)
+            self.stt.muted = False
+
+        # Weave logging (async, doesn't block UI)
+        winner_label = "A" if winner == 0 else "B"
+        brain_features = {"engagement": self.brain.engagement, "focus": self.brain.focus,
+                         "valence": self.brain.valence, "cognitive_load": self.brain.cognitive_load}
+        self.weave.trace_pipeline(brain_features, intent, style_dict, self.candidates,
+            score_a, score_b, winner_label, brain_samples_a, brain_samples_b,
+            reward, adapt_score, self.policy._total_updates)
+        self.weave.log_episode(ctx.tolist(), style_dict, self.candidates,
+            score_a, score_b, winner_label, reward, adapt_score,
+            self.policy._total_updates, intent)
+        if self.policy._total_updates % 5 == 0:
+            self.weave.publish_policy(self.policy, STYLE_PARAMS)
+        self.redis.publish_rl_update(reward, self.policy.get_posteriors(), adapt_score)
+
+        self._generating = False
+        self.phase = "live"
         await self._broadcast("phase", {"phase": "live"})
 
     async def eeg_loop(self):
