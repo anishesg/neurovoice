@@ -345,7 +345,7 @@ class BrainLLM:
         if len(self._conversation) > self._max_ctx:
             self._conversation = self._conversation[-self._max_ctx:]
 
-    def generate(self, brain, style):
+    def generate(self, brain, style, strand_confidences=None):
         intent_clf = IntentClassifier()
         intent, conf = intent_clf.classify(brain)
 
@@ -364,8 +364,9 @@ class BrainLLM:
              "assertiveness","emotional_expressiveness","warmth"]}
 
         try:
-            result = self._interpreter.interpret(brain_features, ctx, style_params)
-            candidates = [result.phrase] + result.alternatives[:3]
+            result = self._interpreter.interpret(
+                brain_features, ctx, style_params, strand_confidences)
+            candidates = [result.response, result.alternative]
             print(f"[LLM] intent={result.intent} emotion={result.emotion} conf={result.confidence:.2f}", flush=True)
             return candidates, intent, conf
         except Exception as e:
@@ -461,7 +462,7 @@ class NeuroVoiceApp:
         loop = asyncio.get_event_loop()
         try:
             candidates, intent, conf = await loop.run_in_executor(
-                None, self.llm.generate, self.brain, style)
+                None, self.llm.generate, self.brain, style, self.braid.get_confidence_map())
             self.candidates = candidates[:2]
         except Exception as e:
             print(f"[APP] Gen error: {e}", flush=True)
@@ -594,6 +595,9 @@ class NeuroVoiceApp:
                       "focus": self.brain.focus, "cognitive_load": self.brain.cognitive_load}
         strand_rewards = self.braid.decompose_reward(brain_dims, reward)
         self.braid.step(strand_rewards, braid_ctx)
+
+        # Ground the LLM: feed back what worked/didn't for next generation
+        self.llm._interpreter.record_outcome(selected, reward, brain_dims)
 
         adapt_score = self.adaptation.update(
             reward, self.policy.exploration_rate, self.policy.std)
