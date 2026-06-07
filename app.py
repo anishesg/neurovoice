@@ -33,7 +33,7 @@ from eeg_pipeline import BrainStateEngine, BrainState
 
 sys.path.insert(0, os.path.expanduser("~/axiom"))
 from neuralrl import BrainReward, CTS, NeuralFingerprint, AdaptationTracker
-from neuralrl import BrainPublisher, BrainInterpreter
+from neuralrl import BrainPublisher, BrainInterpreter, WeaveTracker
 from neuralrl.brain_reward import BrainSnapshot
 
 STYLE_PARAMS = ["formality", "enthusiasm", "verbosity", "empathy",
@@ -386,6 +386,8 @@ class NeuroVoiceApp:
         self.redis = BrainPublisher()
         if self.redis.connect():
             print("[REDIS] Brain stream publishing enabled", flush=True)
+        self.weave = WeaveTracker()
+        self.weave.init()
         self.clients = set()
 
         self.brain = BrainState()
@@ -581,6 +583,27 @@ class NeuroVoiceApp:
         adapt_score = self.adaptation.update(
             reward, self.policy.exploration_rate, self.policy.std)
 
+        # ── Weave: trace + log + publish ──
+        winner_label = "A" if winner == 0 else "B"
+        brain_features = {
+            "engagement": self.brain.engagement, "focus": self.brain.focus,
+            "valence": self.brain.valence, "cognitive_load": self.brain.cognitive_load,
+        }
+        self.weave.trace_pipeline(
+            brain_features, intent, style_dict, self.candidates,
+            score_a, score_b, winner_label,
+            brain_samples_a, brain_samples_b,
+            reward, adapt_score, self.policy._total_updates)
+        self.weave.log_episode(
+            ctx.tolist(), style_dict, self.candidates,
+            score_a, score_b, winner_label, reward, adapt_score,
+            self.policy._total_updates, intent)
+        if self.policy._total_updates % 5 == 0:
+            self.weave.publish_policy(self.policy, STYLE_PARAMS)
+        if self.policy._total_updates % 20 == 0:
+            self.weave.run_eval(self.policy, STYLE_PARAMS)
+        self.redis.publish_rl_update(reward, self.policy.get_posteriors(), adapt_score)
+
         self._generating = False
         self.phase = "live"
         await self._broadcast("reward", {
@@ -591,6 +614,7 @@ class NeuroVoiceApp:
             "trajectories": self.policy.get_trajectories(),
             "reward_history": self.reward.get_history(),
             "rl_stats": self.policy.get_stats(),
+            "weave_episodes": self.weave.episode_count,
         })
         await self._broadcast("phase", {"phase": "live"})
 
